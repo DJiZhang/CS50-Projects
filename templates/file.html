@@ -1,0 +1,151 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Home
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <h1>Delimeter Conversions for File Inputs</h1>
+        <div class="row text-center">
+            <div class="col">
+                File must be of .tex or .md format.
+            </div>
+        </div>
+        <hr>
+        <form id="inputForm" >
+            <div class="row g-2 align-items-center">
+                <div class="col">
+                    <div class="form-floating">
+                        <select class="form-select" id="inlineSelect" aria-label="Output Inline Delimeters">
+                            <option selected value="None">Auto</option>
+                            <option value="dollar">\$ \$</option>
+                            <option value="paren">\\( \\)</option>
+                        </select>
+                        <label for="inlineSelect">Inline Delimeters</label>
+                    </div>
+                </div>
+
+                <div class="col">
+                    <div class="form-floating">
+                        <select class="form-select" id="displaySelect" aria-label="Output Display Delimeters">
+                            <option selected value="None">Auto</option>
+                            <option value="dollar">\$\$ \$\$</option>
+                            <option value="paren">\\[ \\]</option>
+                        </select>
+                        <label for="displaySelect">Display Delimeters</label>
+                    </div>
+                </div>
+                <div class="col-8">
+                    <div class="mb-3 m-2">
+                        <input class="form-control form-control-lg" type="file" id="fileInput" accept=".tex,.md" required>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 text-center g-2">
+                <button type="submit" class="btn btn-lg btn-outline">Convert</button>
+            </div>
+        </form>
+    </div>
+    <hr>
+    <div class="accordion mb-3" id="resultAccordion">
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingOne">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                    Preview Output Text
+                </button>
+            </h2>
+            <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#resultAccordion">
+                <div class="accordion-body">
+                    <textarea class="form-control" id="response" style="height: 300px" placeholder="The converted content from the file will be shown here."></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container" id="downloadContainer">
+        <div class="row g-1 mt-3 text-center" id="fileLink">
+
+        </div>
+        <button class="btn btn-outline d-none" id="clearBtn">Clear Links</button>
+
+    </div>
+
+    <script>
+        const form = document.getElementById('inputForm');
+        const input = document.getElementById('fileInput');
+        let btn_on = false;
+
+        form.addEventListener('submit', async function(form) {
+            form.preventDefault();
+            // Check one file
+            if (input.files.length !== 1) {
+                console.log("did not receive one file");
+                return;
+            }
+            // Build payload
+            let form_data = new FormData();
+            form_data.append('file', input.files[0]);
+            let filename = input.files[0].name;
+
+
+            const delimeters = {
+                inline: document.getElementById("inlineSelect").value,
+                display: document.getElementById("displaySelect").value
+            };
+
+            form_data.append("delimeters", JSON.stringify(delimeters));
+
+            let response = await fetch("/api/file_upload", {
+                method: "POST",
+                body: form_data
+            });
+
+            // Receive download url
+            let blob = await response.blob();
+            let url = URL.createObjectURL(blob);
+
+            // Create element in html
+            let response_area = document.getElementById("fileLink");
+
+            let col = document.createElement("div");
+            col.className = "col-3 text-center ";
+
+            let heading = document.createElement("h4");
+            heading.className = "border rounded";
+
+            let a = document.createElement("a");
+            a.href = url;
+            a.download =  `converted_${filename}`;
+            a.classList.add("text-decoration-none");
+            a.textContent = `Download File: ${a.download}`;
+
+            heading.appendChild(a);
+            col.appendChild(heading);
+            response_area.appendChild(col);
+
+            // Show content preview in accordion
+            let text = await blob.text();
+            document.getElementById("response").value = text;
+            let collapse_element = document.getElementById("collapseOne");
+            let collapse = new bootstrap.Collapse(collapse_element, {toggle: false});
+            collapse.show();
+        });
+
+        form.addEventListener('submit', function(submit){
+            submit.preventDefault();
+            if (!btn_on) {
+                clearBtn = document.getElementById("clearBtn");
+                clearBtn.classList.remove("d-none");
+                btn_on = true;
+                clearBtn.addEventListener("click", function(){
+                    if (confirm("Clear all file download links?")) {
+                        document.getElementById("fileLink").innerHTML = "";
+                        this.classList.add("d-none");
+                        btn_on = false;
+                    }
+                }, {once: true});
+            }
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Home
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <h1>LaTex Delimeters Conversion Tool</h1>
+        <div class="row text-center">
+            <div class="col">
+                <p>A tool for converting between different LaTex delimeters.</p>
+                <p>Choose the desired output delimeter type, or select auto to keep current delimeter types.</p>
+            </div>
+        </div>
+        <hr class="g-2">
+        <div class="row">
+            <div class="col">
+                    <form id="inputForm">
+                        <div class="row g-1">
+                            <div class="col">
+                                <label class="form-label">Inline Delimeters</label>
+                                <select class="form-select" id="inlineSelect" aria-label="Output Inline Delimeters">
+                                    <option selected value="None">Auto</option>
+                                    <option value="dollar">\$ \$</option>
+                                    <option value="paren">\\( \\)</option>
+                                </select>
+                            </div>
+                            <div class="col">
+                                <label class="form-label">Display Delimeters</label>
+                                <select class="form-select" id="displaySelect" aria-label="Output Display Delimeters">
+                                    <option selected value="None">Auto</option>
+                                    <option value="dollar">\$\$ \$\$</option>
+                                    <option value="paren">\\[ \\]</option>
+                                </select>
+                            </div>
+                        </div>
+                        <hr class="g-1">
+                        <div class="row g-2">
+                            <div class="form-floating">
+                                <textarea class="form-control" id="LaTexInput" wrap="off" style="height: 200px"></textarea>
+                                <label for="LaTexInput">LaTex Input</label>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-outline">Convert</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            <div class="col-auto d-flex align-items-stretch">
+                <div class="vr"></div>
+            </div>
+            <div class="col">
+                <h3>Output</h3>
+                <div class="form-floating">
+                    <textarea class="form-control" id="responseBox" style="height: 300px"></textarea>
+                    <label for="responseBox">LaTex Response</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        const form = document.getElementById('inputForm');
+        const output = document.getElementById('responseBox');
+        form.addEventListener('submit', async function(form) {
+            form.preventDefault();
+
+            // Loading State
+
+            output.value = `Converting...`;
+
+            // Build Payload
+            const delimeters = {
+                inline: document.getElementById("inlineSelect").value,
+                display: document.getElementById("displaySelect").value
+            };
+            const payload = {
+                content: document.getElementById('LaTexInput').value,
+                delimeters: delimeters,
+            };
+            console.log(payload);
+
+            let response = await fetch("/api/convert", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
+            let response_json = await response.json();
+
+            // Build html
+            output.value = response_json.result;
+
+        });
+    </script>
+        {% endblock %}
